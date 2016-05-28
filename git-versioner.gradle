@@ -109,10 +109,10 @@ def GitVersion generateVersionName() {
 
     def snapshot = {
         def result = ""
-        if (localChangesCountEnabled) {
+        if (localChangesCountEnabled && localChangesCount > 0) {
             result += "($localChangesCount)"
         }
-        if (snapshotEnabled) {
+        if (snapshotEnabled && hasLocalChanges) {
             result += "-SNAPSHOT"
         }
         return result
