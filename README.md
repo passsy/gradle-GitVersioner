@@ -96,7 +96,7 @@ android {
     defaultConfig {
         ...
 
-        buildConfigField 'string', 'REVISION', gitVersionName
+        buildConfigField 'String', 'REVISION', "\"$gitVersionName\""
     }
 }
 ```
