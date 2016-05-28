@@ -18,12 +18,12 @@ But I think it gives too much insights of the project.
 Once a client knows `commit count == version number` they start asking why the commit count is so high/low for the latest release.
 
 That's why this versioner adds the project age (initial commit to latest commit) as seconds part to the revision.
-By default, one year equals 1000.
+By default, one year equals `1000`.
 This means that the revision count increases every `8.67` hours.
-When you started your project half a year ago and you have 325 commits the revision is something around 825.
+When you started your project half a year ago and you have `325` commits the revision is something around `825`.
 
 When working on a feature branch this versioner adds a two char identifier of the branch name and the commit count since branching.
-When you are building and you have uncommited files it adds the count of the uncommited files and "-SNAPSHOT"
+When you are building and you have uncommited files it adds the count of the uncommited files and `"-SNAPSHOT"`
 
 
 ## Reading the Version
@@ -57,25 +57,25 @@ buildscript {
     // ...
 }
 
-// configure the versioner when required
+// Optional: configure the versioner
 ext.gitVersioner = [
-        defaultBranch           : "develop", // default "master"
-        yearFactor              : 1200, 	 // default "1000"
-        snapshotEnabled         : false,      // default false
-        localChangesCountEnabled: false       // default false
+        defaultBranch           : "develop",  // default "master"
+        yearFactor              : 1200, 	  // default "1000", increasing every 8.57h
+        snapshotEnabled         : false,      // default false, the "-SNAPSHOT" postfix
+        localChangesCountEnabled: false       // default false, the (<commitCount>) before -SNAPSHOT
 ]
 // import the script which runs the version generation
 apply from: 'git-versioner.gradle'
 
 // variable `gitVersionName` can be used everywhere to get the revision name
-println("versionName: $gitVersionName") // output: 1083-dm4(6)-SNAPSHOT
+println("versionName: $gitVersionName") // output: "versionName: 1083-dm4(6)-SNAPSHOT"
 ```
 
 All inforamtion is not only available as a single `String`. You can create your own pattern using the `ext.gitVersion` Object
 
 ```gradle
 // get granular information with variable `gitVersion` of type `GitVersion`
-println("version: ${gitVersion.version}") // output 1083
+println("version: ${gitVersion.version}") // output "version: 1083"
 
 // see all available attributes
 class GitVersion {
@@ -94,13 +94,9 @@ app `build.gradle`
 ```gradle
 android {
     defaultConfig {
-        applicationId 'my.awesome.app'
-        minSdkVersion 14
-        targetSdkVersion 23
-        versionCode 1
-        versionName 1.0.0
+        ...
 
-        resValue("string", "REVISION", gitVersionName)
+        buildConfigField 'string', 'REVISION', gitVersionName
     }
 }
 ```
@@ -114,8 +110,6 @@ in your `Activity`
     	Toast.makeText(this, BuildConfig.REVISION, Toast.LENGTH_SHORT).show();
     }
 ```
-
-
 
 # License
 
