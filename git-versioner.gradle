@@ -1,0 +1,147 @@
+ext {
+    GitVersion version = this.generateVersionName()
+    gitVersion = version
+    gitVersionName = version.name
+}
+
+public class GitVersion {
+
+    public String name;
+
+    public int version = 0;
+
+    public String branchName;
+
+    public String shortBranch = "";
+
+    public int branchVersion = 0;
+
+    public int localChanges = 0;
+
+    @Override
+    public String toString() {
+        if (name == null || name.isEmpty()) {
+            return "${super.toString()}{" +
+                    "name='" + name + '\'' +
+                    ", version=" + version +
+                    ", branchName='" + branchName + '\'' +
+                    ", shortBranch='" + shortBranch + '\'' +
+                    ", branchVersion=" + branchVersion +
+                    '}';
+        }
+        return name
+    }
+}
+
+def GitVersion generateVersionName() {
+
+    // check if git project
+    def status = 'git status'.execute([], rootDir)
+    status.waitFor()
+    def isGitProject = status.exitValue()
+
+    if (isGitProject > 0) {
+        println("ERROR: can't generate a git version, this is not a git project")
+        println(" -> Not a git repository (or any of the parent directories): .git")
+        return new GitVersion()
+    }
+
+    // read ext properties
+    Map configuration = getPropertyOrDefault(rootProject, "gitVersioner", [:]) as Map
+    def defaultBranch = configuration.get("defaultBranch") ?: "master"
+    float yearFactor = (configuration.get("yearFactor") ?: "1000").toString().toFloat()
+    boolean snapshotEnabled = configuration.get("snapshotEnabled") ?: false
+    boolean localChangesCountEnabled = configuration.get("localChangesCountEnabled") ?: false
+
+    // get information from git
+    def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
+    def initialCommitDate = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
+            .text.trim().readLines().first().trim().replaceAll('\'', '').toLong()
+    def localChangesCount = 'git diff-index HEAD'.execute([], rootDir).text.trim().readLines().
+            size()
+    boolean hasLocalChanges = localChangesCount > 0
+
+    def lines = "git rev-list $defaultBranch^1.. --reverse"
+            .execute([], rootDir).text.trim().readLines()
+    def commitsInFeatureBranch = lines.size() - 1;
+
+    // the sha1 of the latest commit in the default branch. Most of the time the point where branched from
+    def lastestDefaultBranchCommitSha1 = lines.first()
+
+    // get additional information
+    def latestCommitDate = "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
+            .execute([], rootDir).text.trim().replaceAll('\'', '').toLong()
+
+    // commit count is the first part of the version
+    def commitCount = "git rev-list $lastestDefaultBranchCommitSha1 --count"
+            .execute([], rootDir).text.trim().toInteger()
+
+    // calculate the time part of the version. 2500 == 2 years, 6 months; 300 == 0.3 year
+    def long YEAR_IN_SECONDS = 60 * 60 * 24 * 365
+    def diff = latestCommitDate - initialCommitDate
+
+    long time = {
+        if (yearFactor <= 0) {
+            return 0;
+        } else {
+            (diff * yearFactor / YEAR_IN_SECONDS + 0.5).intValue()
+        }
+    }();
+
+    // this is the version
+    def combinedVersion = commitCount + time
+
+    def snapshot = {
+        def result = ""
+        if (localChangesCountEnabled) {
+            result += "($localChangesCount)"
+        }
+        if (snapshotEnabled) {
+            result += "-SNAPSHOT"
+        }
+        return result
+    }()
+
+    def holder = new GitVersion()
+    holder.version = combinedVersion
+    holder.branchName = currentBranch
+    holder.branchVersion = commitsInFeatureBranch
+    holder.localChanges = localChangesCount
+
+    String featureBranchCommits = commitsInFeatureBranch == 0 ? "" : commitsInFeatureBranch
+    if (featureBranchCommits.isEmpty()) {
+        // return only the version when on the default branch
+        holder.name = "$combinedVersion$snapshot"
+        return holder
+    }
+
+    // on feature branches, add a branch identifier and the commit count
+    def shortBranch = getTinyBranchName(currentBranch, 2)
+    holder.name = "$combinedVersion-${shortBranch}$featureBranchCommits$snapshot"
+    holder.shortBranch = shortBranch
+    return holder
+}
+
+def Object getPropertyOrDefault(Object root, String name, Object fallback) {
+    return root.hasProperty(name) ? root.property(name) : fallback
+}
+
+def String getTinyBranchName(String originalName, int length) {
+    String nameBase64 = originalName.bytes.encodeBase64().toString()
+
+    String lower = nameBase64.toLowerCase()
+    def result = ""
+    for (int i = 0; result.size() < length; i++) {
+        if (i >= lower.size()) {
+            int charPos = originalName.size() % 26 + 65
+            String lowerCase = Character.toChars(charPos).toString().toLowerCase()
+            return result.padRight(2, lowerCase)
+        }
+        String c = lower.substring(i, i + 1)
+        if (c.matches('[a-z]+')) {
+            result = "$result$c"
+        }
+    }
+
+    return result
+}
