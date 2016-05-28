@@ -70,6 +70,7 @@ apply from: 'git-versioner.gradle'
 // variable `gitVersionName` can be used everywhere to get the revision name
 println("versionName: $gitVersionName") // output: "versionName: 1083-dm4(6)-SNAPSHOT"
 ```
+Consider using this [cache plugin](https://github.com/kageiit/gradle-url-cache-plugin) for offline support.
 
 All inforamtion is not only available as a single `String`. You can create your own pattern using the `ext.gitVersion` Object
 
@@ -87,6 +88,8 @@ class GitVersion {
     int localChanges;
 }
 ```
+
+### Android 
 
 Display the version in your android app
 
