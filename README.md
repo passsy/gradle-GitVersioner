@@ -68,7 +68,7 @@ ext.gitVersioner = [
         localChangesCountEnabled: false       // default false, the (<commitCount>) before -SNAPSHOT
 ]
 // import the script which runs the version generation
-apply from: 'git-versioner.gradle'
+apply from: 'https://raw.githubusercontent.com/passsy/gradle-GitVersioner/master/git-versioner.gradle'
 
 // variable `gitVersionName` can be used everywhere to get the revision name
 println("versionName: $gitVersionName") // output: "versionName: 1083-dm4(6)-SNAPSHOT"
