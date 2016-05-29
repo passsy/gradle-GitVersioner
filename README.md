@@ -28,23 +28,26 @@ When you are building and you have uncommited files it adds the count of the unc
 
 ## Reading the Version
 
+#### Normal build number
 ```
 1083
 ```
 
 `1083`: number of commits + time component. this revision is in the `master` branch. 
 
+#### On a feature branch
 ```
 1083-dm4
 ```
 
-`-dm4`: on feature branch. `4` commits since branching from revision `1083`. First two `[a-z]` chars of the base64 encoded branch name. Clients don't have to know about your information and typos in branch names. But you have to be able to distinguish between different builds of different branches.
+`-dm4`: `4` commits since branching from revision `1083`. First two `[a-z]` chars of the base64 encoded branch name. Clients don't have to know about your information and typos in branch names. But you have to be able to distinguish between different builds of different branches.
 
+#### Build with local changes
 ```
 1083-dm4(6)-SNAPSHOT
 ```
 
-`(6)-SNAPSHOT`: 6 uncommited but changed files. Build has local changes. Hopefully nothing a client will ever see. But you know that your version is a work in progress version with some local changes
+`(6)-SNAPSHOT`: 6 uncommited but changed files. Hopefully nothing a client will ever see. But you know that your version is a work in progress version with some local changes
 
 ## Get it
 
