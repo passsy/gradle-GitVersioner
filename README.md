@@ -8,6 +8,8 @@ This is not possible in git because branching is so common (and that's a good th
 Not even the latest common commit in history is clear.
 This projects aims to bring the SVN simplicity and more back to git for your gradle (android) project.
 
+####Read the story behind on [medium](https://medium.com/@passsy/use-different-build-numbers-for-every-build-automatically-using-a-gradle-script-35577cd31b19#.g8quoji2e)
+
 ## Idea
 
 Just count the commits of the main branch (`master` or `develop` in most cases) as the base revision.
