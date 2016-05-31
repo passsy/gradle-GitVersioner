@@ -71,26 +71,31 @@ def GitVersion generateVersionName() {
 
     // get information from git
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
-    def initialCommitDate = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
-            .text.trim().readLines().first().trim().replaceAll('\'', '').toLong()
+
+    def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
+            .text.trim().readLines()
+    def initialCommitDate = log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0
     def localChangesCount = 'git diff-index HEAD'.execute([], rootDir).text.trim().readLines().
             size()
     boolean hasLocalChanges = localChangesCount > 0
+
 
     def lines = "git rev-list $defaultBranch^1.. --reverse"
             .execute([], rootDir).text.trim().readLines()
     def commitsInFeatureBranch = lines.size() - 1;
 
     // the sha1 of the latest commit in the default branch. Most of the time the point where branched from
-    def lastestDefaultBranchCommitSha1 = lines.first()
+    def lastestDefaultBranchCommitSha1 = lines.size() > 0 ? lines.first() : null
 
     // get additional information
-    def latestCommitDate = "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
-            .execute([], rootDir).text.trim().replaceAll('\'', '').toLong()
+    def latestCommitDate = lastestDefaultBranchCommitSha1 != null ?
+            "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
+            .execute([], rootDir).text.trim().replaceAll('\'', '').toLong() : 0
 
     // commit count is the first part of the version
-    def commitCount = "git rev-list $lastestDefaultBranchCommitSha1 --count"
-            .execute([], rootDir).text.trim().toInteger()
+    def commitCount = lastestDefaultBranchCommitSha1 != null ?
+            "git rev-list $lastestDefaultBranchCommitSha1 --count"
+            .execute([], rootDir).text.trim().toInteger() : 0
 
     // calculate the time part of the version. 2500 == 2 years, 6 months; 300 == 0.3 year
     def long YEAR_IN_SECONDS = 60 * 60 * 24 * 365
