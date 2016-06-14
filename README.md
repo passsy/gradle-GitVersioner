@@ -8,6 +8,8 @@ This is not possible in git because branching is so common (and that's a good th
 Not even the latest common commit in history is clear.
 This projects aims to bring the SVN simplicity and more back to git for your gradle (android) project.
 
+####Read the story behind on [medium](https://medium.com/@passsy/use-different-build-numbers-for-every-build-automatically-using-a-gradle-script-35577cd31b19#.g8quoji2e)
+
 ## Idea
 
 Just count the commits of the main branch (`master` or `develop` in most cases) as the base revision.
@@ -28,23 +30,26 @@ When you are building and you have uncommited files it adds the count of the unc
 
 ## Reading the Version
 
+#### Normal build number
 ```
 1083
 ```
 
 `1083`: number of commits + time component. this revision is in the `master` branch. 
 
+#### On a feature branch
 ```
 1083-dm4
 ```
 
-`-dm4`: on feature branch. `4` commits since branching from revision `1083`. First two `[a-z]` chars of the base64 encoded branch name. Clients don't have to know about your information and typos in branch names. But you have to be able to distinguish between different builds of different branches.
+`-dm4`: `4` commits since branching from revision `1083`. First two `[a-z]` chars of the base64 encoded branch name. Clients don't have to know about your information and typos in branch names. But you have to be able to distinguish between different builds of different branches.
 
+#### Build with local changes
 ```
 1083-dm4(6)-SNAPSHOT
 ```
 
-`(6)-SNAPSHOT`: 6 uncommited but changed files. Build has local changes. Hopefully nothing a client will ever see. But you know that your version is a work in progress version with some local changes
+`(6)-SNAPSHOT`: 6 uncommited but changed files. Hopefully nothing a client will ever see. But you know that your version is a work in progress version with some local changes
 
 ## Get it
 
@@ -65,7 +70,7 @@ ext.gitVersioner = [
         localChangesCountEnabled: false       // default false, the (<commitCount>) before -SNAPSHOT
 ]
 // import the script which runs the version generation
-apply from: 'git-versioner.gradle'
+apply from: 'https://raw.githubusercontent.com/passsy/gradle-GitVersioner/master/git-versioner.gradle'
 
 // variable `gitVersionName` can be used everywhere to get the revision name
 println("versionName: $gitVersionName") // output: "versionName: 1083-dm4(6)-SNAPSHOT"
