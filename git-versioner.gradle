@@ -89,7 +89,8 @@ def GitVersion generateVersionName() {
             .execute([], rootDir).text.trim().readLines()
 
     // the sha1 of the latest commit in the default branch
-    def lastestDefaultBranchCommitSha1 = featurelines.size() == 1 ? featurelines.first() : {
+    def lastestDefaultBranchCommitSha1 = defaultAndFeatureLines.size() == 1 ?
+            defaultAndFeatureLines.first() : {
         try {
             return defaultAndFeatureLines.findAll { !featurelines.contains(it) }.first()
         } catch (NoSuchElementException e) {
@@ -99,15 +100,15 @@ def GitVersion generateVersionName() {
     }()
 
     // get additional information
-    long latestCommitDate = lastestDefaultBranchCommitSha1 != null ?
-            "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
-                    .execute([], rootDir).text.trim().replaceAll('\'', '').toLong() :
+    def defaultBranchDatesLog = "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
+            .execute([], rootDir).text.trim().replaceAll('\'', '')
+    long latestCommitDate = defaultBranchDatesLog.isLong() ? defaultBranchDatesLog.toLong() :
             initialCommitDate
 
     // commit count is the first part of the version
-    def commitCount = lastestDefaultBranchCommitSha1 != null ?
-            "git rev-list $lastestDefaultBranchCommitSha1 --count"
-                    .execute([], rootDir).text.trim().toInteger() : 0
+    def defautBranchCommitCount = "git rev-list $lastestDefaultBranchCommitSha1 --count"
+            .execute([], rootDir).text.trim()
+    def commitCount = defautBranchCommitCount.isInteger() ? defautBranchCommitCount.toInteger() : 0
 
     // calculate the time part of the version. 2500 == 2 years, 6 months; 300 == 0.3 year
     def long YEAR_IN_SECONDS = 60 * 60 * 24 * 365
