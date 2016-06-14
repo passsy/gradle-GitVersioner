@@ -83,6 +83,7 @@ def GitVersion generateVersionName() {
 
     def featurelines = "git rev-list $defaultBranch.."
             .execute([], rootDir).text.trim().readLines()
+
     def commitsInFeatureBranch = featurelines.size();
 
     def defaultAndFeatureLines = "git rev-list $defaultBranch^1.."
@@ -95,6 +96,7 @@ def GitVersion generateVersionName() {
             return defaultAndFeatureLines.findAll { !featurelines.contains(it) }.first()
         } catch (NoSuchElementException e) {
             // no commits found
+            println "##"
             return latestCommit
         }
     }()
@@ -113,6 +115,7 @@ def GitVersion generateVersionName() {
     // calculate the time part of the version. 2500 == 2 years, 6 months; 300 == 0.3 year
     def long YEAR_IN_SECONDS = 60 * 60 * 24 * 365
     def diff = latestCommitDate - initialCommitDate
+
 
     long time = {
         if (yearFactor <= 0) {
