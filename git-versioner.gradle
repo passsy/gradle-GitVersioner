@@ -71,31 +71,43 @@ def GitVersion generateVersionName() {
 
     // get information from git
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
+    def latestCommit = 'git rev-parse HEAD'.execute([], rootDir).text.trim()
 
     def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
             .text.trim().readLines()
-    def initialCommitDate = log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0
+    long initialCommitDate = log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0
     def localChangesCount = 'git diff-index HEAD'.execute([], rootDir).text.trim().readLines().
             size()
     boolean hasLocalChanges = localChangesCount > 0
 
 
-    def lines = "git rev-list $defaultBranch^1.. --reverse"
+    def featurelines = "git rev-list $defaultBranch.."
             .execute([], rootDir).text.trim().readLines()
-    def commitsInFeatureBranch = lines.size() - 1;
+    def commitsInFeatureBranch = featurelines.size();
 
-    // the sha1 of the latest commit in the default branch. Most of the time the point where branched from
-    def lastestDefaultBranchCommitSha1 = lines.size() > 0 ? lines.first() : null
+    def defaultAndFeatureLines = "git rev-list $defaultBranch^1.."
+            .execute([], rootDir).text.trim().readLines()
+
+    // the sha1 of the latest commit in the default branch
+    def lastestDefaultBranchCommitSha1 = featurelines.size() == 1 ? featurelines.first() : {
+        try {
+            return defaultAndFeatureLines.findAll { !featurelines.contains(it) }.first()
+        } catch (NoSuchElementException e) {
+            // no commits found
+            return latestCommit
+        }
+    }()
 
     // get additional information
-    def latestCommitDate = lastestDefaultBranchCommitSha1 != null ?
+    long latestCommitDate = lastestDefaultBranchCommitSha1 != null ?
             "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
-            .execute([], rootDir).text.trim().replaceAll('\'', '').toLong() : 0
+                    .execute([], rootDir).text.trim().replaceAll('\'', '').toLong() :
+            initialCommitDate
 
     // commit count is the first part of the version
     def commitCount = lastestDefaultBranchCommitSha1 != null ?
             "git rev-list $lastestDefaultBranchCommitSha1 --count"
-            .execute([], rootDir).text.trim().toInteger() : 0
+                    .execute([], rootDir).text.trim().toInteger() : 0
 
     // calculate the time part of the version. 2500 == 2 years, 6 months; 300 == 0.3 year
     def long YEAR_IN_SECONDS = 60 * 60 * 24 * 365
@@ -105,7 +117,7 @@ def GitVersion generateVersionName() {
         if (yearFactor <= 0) {
             return 0;
         } else {
-            (diff * yearFactor / YEAR_IN_SECONDS + 0.5).intValue()
+            return (diff * yearFactor / YEAR_IN_SECONDS + 0.5).intValue()
         }
     }();
 
