@@ -71,7 +71,7 @@ def GitVersion generateVersionName() {
 
     // get information from git
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
-    def latestCommit = 'git rev-parse HEAD'.execute([], rootDir).text.trim()
+    def currentCommit = 'git rev-parse HEAD'.execute([], rootDir).text.trim()
 
     def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
             .text.trim().readLines()
@@ -83,10 +83,9 @@ def GitVersion generateVersionName() {
 
     def featurelines = "git rev-list $defaultBranch.."
             .execute([], rootDir).text.trim().readLines()
-
     def commitsInFeatureBranch = featurelines.size();
 
-    def defaultAndFeatureLines = "git rev-list $defaultBranch^1.."
+    def defaultAndFeatureLines = "git rev-list $currentCommit"
             .execute([], rootDir).text.trim().readLines()
 
     // the sha1 of the latest commit in the default branch
@@ -96,8 +95,7 @@ def GitVersion generateVersionName() {
             return defaultAndFeatureLines.findAll { !featurelines.contains(it) }.first()
         } catch (NoSuchElementException e) {
             // no commits found
-            println "##"
-            return latestCommit
+            return currentCommit
         }
     }()
 
