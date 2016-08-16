@@ -64,6 +64,7 @@ def GitVersion generateVersionName() {
 
     // read ext properties
     Map configuration = getPropertyOrDefault(rootProject, "gitVersioner", [:]) as Map
+    def String[] stableBranches = configuration.get("stableBranches") ?: []
     def defaultBranch = configuration.get("defaultBranch") ?: "master"
     float yearFactor = (configuration.get("yearFactor") ?: "1000").toString().toFloat()
     boolean snapshotEnabled = configuration.get("snapshotEnabled") ?: true
@@ -71,6 +72,11 @@ def GitVersion generateVersionName() {
 
     // get information from git
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
+
+    // use a defined stable branch when on such a branch
+    if (stableBranches.contains(currentBranch)) {
+        defaultBranch = currentBranch
+    }
     def currentCommit = 'git rev-parse HEAD'.execute([], rootDir).text.trim()
 
     def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
