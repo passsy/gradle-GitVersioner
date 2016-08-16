@@ -65,6 +65,7 @@ buildscript {
 // Optional: configure the versioner
 ext.gitVersioner = [
         defaultBranch           : "develop",  // default "master"
+        stableBranches          : ["master", "someOtherBranch"], // default [], the feature branch postfix (-dm4(6)) will not be appended on stable branches, all commits are included into the version number calculation
         yearFactor              : 1200, 	  // default "1000", increasing every 8.57h
         snapshotEnabled         : false,      // default false, the "-SNAPSHOT" postfix
         localChangesCountEnabled: false       // default false, the (<commitCount>) before -SNAPSHOT
