@@ -67,8 +67,8 @@ def GitVersion generateVersionName() {
     def String[] stableBranches = configuration.get("stableBranches") ?: []
     def defaultBranch = configuration.get("defaultBranch") ?: "master"
     float yearFactor = (configuration.get("yearFactor") ?: "1000").toString().toFloat()
-    boolean snapshotEnabled = configuration.get("snapshotEnabled") ?: true
-    boolean localChangesCountEnabled = configuration.get("localChangesCountEnabled") ?: true
+    boolean snapshotEnabled = configuration.get("snapshotEnabled") != false
+    boolean localChangesCountEnabled = configuration.get("localChangesCountEnabled") != false
 
     // get information from git
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
