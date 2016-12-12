@@ -92,6 +92,7 @@ class GitVersion {
     String shortBranch;
     int branchVersion;
     int localChanges;
+    String commit;
 }
 ```
 

@@ -34,6 +34,8 @@ public class GitVersion {
 
     public int localChanges = 0;
 
+    public String commit;
+
     @Override
     public String toString() {
         if (name == null || name.isEmpty()) {
@@ -154,6 +156,7 @@ def GitVersion generateVersionName() {
     def holder = new GitVersion()
     holder.version = combinedVersion
     holder.branchName = currentBranch
+    holder.commit = currentCommit
     holder.branchVersion = commitsInFeatureBranch
     holder.localChanges = localChangesCount
 
