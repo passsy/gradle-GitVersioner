@@ -100,7 +100,6 @@ def GitVersion generateVersionName() {
 
     def diffToDefault = "git rev-list $defaultBranch..".execute([], rootDir)
     diffToDefault.waitFor()
-    println("exit with ${diffToDefault.exitValue()}")
     if (diffToDefault.exitValue() != 0) {
         diffToDefault = "git rev-list origin/$defaultBranch..".execute([], rootDir)
     }
