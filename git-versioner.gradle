@@ -97,8 +97,13 @@ def GitVersion generateVersionName() {
     boolean hasLocalChanges = localChangesCount > 0
 
 
-    def featurelines = "git rev-list $defaultBranch.."
-            .execute([], rootDir).text.trim().readLines()
+
+    def diffToDefault = "git rev-list $defaultBranch..".execute([], rootDir)
+    diffToDefault.waitFor()
+    if (diffToDefault.exitValue() != 0) {
+        diffToDefault = "git rev-list origin/$defaultBranch..".execute([], rootDir)
+    }
+    def featurelines = diffToDefault.text.trim().readLines()
     def commitsInFeatureBranch = featurelines.size();
 
     def defaultAndFeatureLines = "git rev-list $currentCommit"
