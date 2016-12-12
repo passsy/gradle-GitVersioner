@@ -68,7 +68,15 @@ ext.gitVersioner = [
         stableBranches          : ["master", "someOtherBranch"], // default [], the feature branch postfix (-dm4(6)) will not be appended on stable branches, all commits are included into the version number calculation
         yearFactor              : 1200, 	  // default "1000", increasing every 8.57h
         snapshotEnabled         : false,      // default false, the "-SNAPSHOT" postfix
-        localChangesCountEnabled: false       // default false, the (<commitCount>) before -SNAPSHOT
+        localChangesCountEnabled: false,       // default false, the (<commitCount>) before -SNAPSHOT
+        shortName: { gitVersion ->            // optional closure to build a short name
+          // allows you to add your own short name logic
+          // All properties from gitVersion are available
+          // can be used for CI `System.getenv("BUILD_NUMBER")`
+
+          // i.e. use short sha1
+          return gitVersion.commit.subSequence(0, 7)
+        }
 ]
 // import the script which runs the version generation
 apply from: 'https://raw.githubusercontent.com/passsy/gradle-GitVersioner/master/git-versioner.gradle'
