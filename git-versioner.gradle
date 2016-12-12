@@ -165,9 +165,16 @@ def GitVersion generateVersionName() {
     }
 
     // on feature branches, add a branch identifier and the commit count
-    def shortBranch = getTinyBranchName(currentBranch, 2)
-    holder.name = "$combinedVersion-${shortBranch}$featureBranchCommits$snapshot"
+    def shortBranch = {
+        if (currentBranch.isEmpty()) {
+            return "${currentCommit.subSequence(0, 7)}-"
+        } else {
+            return getTinyBranchName(currentBranch, 2)
+        }
+    }()
     holder.shortBranch = shortBranch
+
+    holder.name = "$combinedVersion-${shortBranch}$featureBranchCommits$snapshot"
     return holder
 }
 
