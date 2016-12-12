@@ -79,6 +79,7 @@ def GitVersion generateVersionName() {
     float yearFactor = (configuration.get("yearFactor") ?: "1000").toString().toFloat()
     boolean snapshotEnabled = configuration.get("snapshotEnabled") != false
     boolean localChangesCountEnabled = configuration.get("localChangesCountEnabled") != false
+    def shortNameClosure = configuration.get("shortName")
 
     // get information from git
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
@@ -174,13 +175,13 @@ def GitVersion generateVersionName() {
     }
 
     // on feature branches, add a branch identifier and the commit count
-    def shortBranch = {
+    def shortBranch = (shortNameClosure ?: {
         if (currentBranch.isEmpty()) {
             return "${currentCommit.subSequence(0, 7)}-"
         } else {
             return getTinyBranchName(currentBranch, 2)
         }
-    }()
+    })(holder)
     holder.shortBranch = shortBranch
 
     holder.name = "$combinedVersion-${shortBranch}$featureBranchCommits$snapshot"
@@ -204,7 +205,7 @@ def String getTinyBranchName(String originalName, int length) {
     for (int i = 0; chars.size() > i; i++) {
         int c = chars[i]
         int pos = i % length
-        if (outChars[pos] == null){
+        if (outChars[pos] == null) {
             outChars[pos] = 0
         }
         int next = (c as int) + outChars[pos]
