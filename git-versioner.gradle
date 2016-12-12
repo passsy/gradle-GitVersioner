@@ -177,20 +177,27 @@ def Object getPropertyOrDefault(Object root, String name, Object fallback) {
 
 def String getTinyBranchName(String originalName, int length) {
     String nameBase64 = originalName.bytes.encodeBase64().toString()
-
-    String lower = nameBase64.toLowerCase()
-    def result = ""
-    for (int i = 0; result.size() < length; i++) {
-        if (i >= lower.size()) {
-            int charPos = originalName.size() % 26 + 65
-            String lowerCase = Character.toChars(charPos).toString().toLowerCase()
-            return result.padRight(2, lowerCase)
-        }
-        String c = lower.substring(i, i + 1)
-        if (c.matches('[a-z]+')) {
-            result = "$result$c"
-        }
+    if (nameBase64.length() < length) {
+        int charPos = originalName.size() % 26 + 65
+        String lowerCase = Character.toChars(charPos).toString().toLowerCase()
+        return "".padRight(2, lowerCase)
     }
 
+    def outChars = new Integer[length]
+    def chars = nameBase64.toCharArray()
+    for (int i = 0; chars.size() > i; i++) {
+        int c = chars[i]
+        int pos = i % length
+        if (outChars[pos] == null){
+            outChars[pos] = 0
+        }
+        int next = (c as int) + outChars[pos]
+        outChars[pos] = next % 26
+    }
+
+    def result = ""
+    for (int i = 0; outChars.size() > i; i++) {
+        result += Character.toChars(outChars[i] + 65).toString().toLowerCase()
+    }
     return result
 }
