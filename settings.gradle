@@ -1,3 +1,2 @@
+include ':core'
 rootProject.name = 'gitVersioner'
-include ':gitVersioner'
-

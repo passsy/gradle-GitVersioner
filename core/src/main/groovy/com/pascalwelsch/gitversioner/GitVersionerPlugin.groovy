@@ -7,8 +7,10 @@ class GitVersionerPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        println "ALIVE"
         def gitVersionExtension = project.extensions.create('gitVersioner', GitVersion)
-        GitVersion gitVersion = new GitVersionGenerator(project, gitVersionExtension).generateVersionName()
+        GitVersion gitVersion = new GitVersionGenerator(project, gitVersionExtension).
+                generateVersionName()
         project.extensions.add("gitVersion", gitVersion)
         project.extensions.add("gitVersionName", gitVersion.name)
     }

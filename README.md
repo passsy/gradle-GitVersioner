@@ -10,6 +10,20 @@ This projects aims to bring the SVN simplicity and more back to git for your gra
 
 ####Read the story behind on [medium](https://medium.com/@passsy/use-different-build-numbers-for-every-build-automatically-using-a-gradle-script-35577cd31b19#.g8quoji2e)
 
+## Usage
+
+```gradle
+// Top-level build gradle
+buildscript {
+    dependencies {
+        classpath files('<path/to/plugin-repo>/core/build/libs/core-0.0.1-SNAPSHOT.jar')
+    }
+}
+
+apply plugin: 'com.pascalwelsch.gitversioner'
+```
+
+
 ## Idea
 
 Just count the commits of the main branch (`master` or `develop` in most cases) as the base revision.
