@@ -1,0 +1,15 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+    }
+}
+
+allprojects {
+    repositories {
+        jcenter()
+    }
+    version = "0.0.1-SNAPSHOT"
+}
+
