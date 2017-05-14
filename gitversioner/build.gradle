@@ -1,0 +1,28 @@
+apply plugin: 'kotlin'
+
+group = 'com.pascalwelsch.gitversioner'
+version = '0.0.1-SNAPSHOT'
+
+buildscript {
+    ext.kotlin_version = '1.1.2'
+    configure([repositories, project.repositories]) {
+        maven { url 'https://repo.gradle.org/gradle/repo' }
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+    repositories {
+        mavenCentral()
+    }
+}
+
+dependencies {
+    compile gradleApi()
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    compile "org.jetbrains.kotlin:kotlin-reflect:$kotlin_version"
+    testCompile 'junit:junit:4.12'
+}
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
