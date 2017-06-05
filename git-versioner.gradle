@@ -93,7 +93,7 @@ def GitVersion generateVersionName() {
 
     def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
             .text.trim().readLines()
-    long initialCommitDate = (log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0) + initialOffset
+    long initialCommitDate = (log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0) - initialOffset
     def localChangesCount = 'git diff-index HEAD'.execute([], rootDir).text.trim().readLines().
             size()
     boolean hasLocalChanges = localChangesCount > 0
