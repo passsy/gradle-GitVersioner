@@ -77,6 +77,7 @@ def GitVersion generateVersionName() {
     def String[] stableBranches = configuration.get("stableBranches") ?: []
     def defaultBranch = configuration.get("defaultBranch") ?: "master"
     float yearFactor = (configuration.get("yearFactor") ?: "1000").toString().toFloat()
+	long initialOffset = (configuration.get("initialOffset") ?: "0").toString().toLong()
     boolean snapshotEnabled = configuration.get("snapshotEnabled") != false
     boolean localChangesCountEnabled = configuration.get("localChangesCountEnabled") != false
     def shortNameClosure = configuration.get("shortName")
@@ -92,7 +93,7 @@ def GitVersion generateVersionName() {
 
     def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
             .text.trim().readLines()
-    long initialCommitDate = log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0
+    long initialCommitDate = (log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0) + initialOffset
     def localChangesCount = 'git diff-index HEAD'.execute([], rootDir).text.trim().readLines().
             size()
     boolean hasLocalChanges = localChangesCount > 0
