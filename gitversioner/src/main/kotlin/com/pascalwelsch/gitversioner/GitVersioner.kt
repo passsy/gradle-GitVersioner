@@ -2,6 +2,7 @@ package com.pascalwelsch.gitversioner
 
 import org.gradle.api.Project
 import java.util.*
+import kotlin.system.measureTimeMillis
 
 
 public open class GitVersioner {
@@ -12,30 +13,43 @@ public open class GitVersioner {
 
     var defaultBranch: String = "master"
 
-    var formatter: VersionFormatter = object : VersionFormatter {
-        override fun format(info: GitVersionInformation): String {
-            return "default formatter!"
-        }
-    }
+    var formatter: ((GitVersionInformation) -> CharSequence) = { "default formatter!" }
 
     fun printYourself() {
-        println("\tdefaultBranch: $defaultBranch")
-        val info = GitVersionInformation(branch = "master", isSnapshot = true,
-                localChangesCount = 0)
-        println("\tformatter: $formatter => ${formatter.format(info)}")
 
-        println("\tversionName: ${versionName()}")
-        println("\tversionCode: ${versionCode()}")
-        with(gitExtractor) {
-            println("\tbranch $currentBranch")
-            println("\tsha1 $currentSha1")
-            println("\tinitial commit date ${Date(initialCommitDate * 1000)}")
-            println("\tlocal changes $localChanges")
+        val took = measureTimeMillis {
 
-            val featureBranchCommitCount = commitsFrom(defaultBranch, currentSha1).count()
-            println("\tfeature branch commit count $featureBranchCommitCount")
-            println("\tcommit count $commitCount")
+            println("\tdefaultBranch: $defaultBranch")
+            val info = GitVersionInformation(branch = gitExtractor.currentBranch, isSnapshot = gitExtractor.localChanges > 0,
+                    localChangesCount = gitExtractor.localChanges)
+            val name = formatter.invoke(info)
+            println("\tformatter: $formatter => $name")
+
+            println("\tversionName: ${versionName()}")
+            println("\tversionCode: ${versionCode()}\n")
+            with(gitExtractor) {
+                println("\tbranch $currentBranch")
+                println("\tsha1 $currentSha1")
+                println("\tinitial commit date ${Date(initialCommitDate * 1000)}")
+                println("\tHEAD commit date ${Date(headCommitDate * 1000)}")
+                println("\tlocal changes $localChanges")
+
+                val allCommits = commitsUpTo("HEAD")
+                val defaultBranchCommits = commitsUpTo(defaultBranch)
+
+                val split = allCommits.groupBy { defaultBranchCommits.contains(it) }
+
+                val commitsOnFeatureBranch = split[false] ?: emptyList()
+                val commitsOnDefaultBranch = split[true] ?: emptyList()
+
+                println("\tall commit count ${allCommits.count()}")
+                println("\tcommits on feature branch ${commitsOnFeatureBranch.count()}")
+
+                println("\tlatest default branch commit: ${commitsOnDefaultBranch.first()}")
+            }
         }
+
+        println("\ntook: ${took}ms")
     }
 
     fun versionCode(): Int {
@@ -57,7 +71,7 @@ public open class GitVersioner {
 public data class GitVersionInformation(
         val branch: String,
         val isSnapshot: Boolean,
-        val localChangesCount: Long
+        val localChangesCount: Int
 )
 
 public interface VersionFormatter {

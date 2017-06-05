@@ -9,12 +9,31 @@ internal class GitVersionExtractor(val project: Project) {
 
     internal val currentBranch: String by lazy { "git symbolic-ref --short -q HEAD".execute().text().trim() }
 
-    internal val localChanges: Int by lazy { "git diff-index HEAD".execute().text().trim().lines().size }
+    internal val localChanges: Int by lazy {
+        val text = "git diff-index HEAD".execute().text().trim()
+        if (text.isEmpty()) 0 else text.lines().size
+    }
 
     internal val initialCommitDate: Long by lazy {
-        "git log --pretty=format:'%at' --max-parents=0".execute().text().replace("\'",
-                "").trim().toLong()
+        "git log --pretty=format:'%at' --max-parents=0".execute()
+                .text().replace("\'", "").trim().toLong()
     }
+
+    internal val headCommitDate: Long by lazy {
+        "git log --pretty=format:'%at' -n 1".execute()
+                .text().replace("\'", "").trim().toLong()
+    }
+
+//    internal val defaultBranchHeadSha1: String by lazy {
+//
+//        val featureBranchCommits = commitsFrom()
+//        val allCommits = commitsUpTo(currentSha1)
+//        allCommits.filter {  }
+//    }
+//
+//    internal val headCommitDate: Long by lazy {
+//        "git log $"
+//    }
 
     internal val commitCount: Int by lazy { commitsUpTo("HEAD").count() }
 
@@ -45,7 +64,13 @@ internal class GitVersionExtractor(val project: Project) {
             result = "git rev-list origin/$rev".execute()
         }
 
-        val list = result.text().trim().lines().map { it.trim() }
+        val text = result.text().trim()
+        if (text.isEmpty()) {
+            println("git rev-list $rev -> 0")
+            return emptyList()
+        }
+
+        val list = text.lines().map { it.trim() }
 
         println("git rev-list $rev -> ${list.count()}")
         return list
@@ -57,9 +82,15 @@ internal class GitVersionExtractor(val project: Project) {
             result = "git rev-list origin/$from..$to".execute()
         }
 
-        val list = result.text().trim().lines().map { it.trim() }
+        val text = result.text().trim()
+        if (text.isEmpty()) {
+            println("git rev-list $from..$to -> 0")
+            return emptyList()
+        }
 
+        val list = text.lines().map { it.trim() }
         println("git rev-list $from..$to -> ${list.count()}")
+
         return list
     }
 

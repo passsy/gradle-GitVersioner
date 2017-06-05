@@ -18,12 +18,9 @@ public class GitVersionerPlugin : Plugin<Project> {
 
         // add extension to root project, makes sense only once per project
         val versioner = rootProject.extensions.create("gitVersioner", GitVersioner::class.java)
-        versioner.rootProject = rootProject;
+        versioner.rootProject = rootProject
 
-
-        println("config: ")
-        versioner.printYourself()
+        //println("config: ")
+        //versioner.printYourself()
     }
-
-
 }
