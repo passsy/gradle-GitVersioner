@@ -16,7 +16,8 @@ This projects aims to bring the SVN simplicity and more back to git for your gra
 // Top-level build gradle
 buildscript {
     dependencies {
-        classpath files('<path/to/plugin-repo>/core/build/libs/core-0.0.1-SNAPSHOT.jar')
+        classpath files('<path/to/repo>/' +
+                    'gitversioner/build/libs/gitversioner-0.0.1-SNAPSHOT.jar')
     }
 }
 

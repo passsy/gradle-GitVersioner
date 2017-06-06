@@ -6,6 +6,9 @@ data class Commit(
         val date: Long
 )
 
+/**
+ * Mocks a real git repo with commit history and branches
+ */
 class MockGitRepo(
         val graph: Collection<Commit> = emptyList(),
         val head: String? = null,

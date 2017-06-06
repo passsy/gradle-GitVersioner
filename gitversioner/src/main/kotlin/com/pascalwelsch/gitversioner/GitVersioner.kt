@@ -1,11 +1,9 @@
 package com.pascalwelsch.gitversioner
 
-const val YEAR_IN_SECONDS = 60 * 60 * 24 * 365
+private const val YEAR_IN_SECONDS = 60 * 60 * 24 * 365
+internal val NO_CHANGES = LocalChanges(0, 0, 0)
 
-val NO_CHANGES = LocalChanges(0, 0, 0)
-
-
-public open class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
+public class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
 
     var baseBranch: String = "master"
 
@@ -45,7 +43,6 @@ public open class GitVersioner internal constructor(private val gitInfoExtractor
         if (!gitInfoExtractor.isGitProjectReady) {
             return "undefined"
         }
-
         return formatter.invoke(this).toString()
     }
 
@@ -84,15 +81,7 @@ public open class GitVersioner internal constructor(private val gitInfoExtractor
      * feature branch was created or the last base branch commit which was merged
      * into the feature branch
      */
-    val featureBranchOriginCommit by lazy {
-        val commit = baseBranchCommits.firstOrNull()
-        if(commit != null) return@lazy commit
-
-
-
-
-        null
-    }
+    val featureBranchOriginCommit: String? by lazy { baseBranchCommits.firstOrNull() }
 }
 
 data class LocalChanges(

@@ -9,9 +9,9 @@ interface GitInfoExtractor {
     val currentBranch: String?
     val localChanges: LocalChanges
     val initialCommitDate: Long
-    fun commitDate(rev: String): Long
     val commitsToHead: List<String>
     val isGitProjectReady: Boolean
+    fun commitDate(rev: String): Long
     fun commitsUpTo(rev: String): List<String>
 }
 
