@@ -1,79 +1,106 @@
 package com.pascalwelsch.gitversioner
 
-import org.gradle.api.Project
-import java.util.*
-import kotlin.system.measureTimeMillis
+const val YEAR_IN_SECONDS = 60 * 60 * 24 * 365
+
+val NO_CHANGES = LocalChanges(0, 0, 0)
 
 
-public open class GitVersioner {
+public open class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
 
-    internal lateinit var rootProject: Project
+    var baseBranch: String = "master"
 
-    private val gitExtractor: GitVersionExtractor by lazy { GitVersionExtractor(rootProject!!) }
+    var yearFactor: Int = 1000
 
-    var defaultBranch: String = "master"
-
-    var formatter: ((GitVersionInformation) -> CharSequence) = { "default formatter!" }
-
-    fun printYourself() {
-
-        val took = measureTimeMillis {
-
-            println("\tdefaultBranch: $defaultBranch")
-            val info = GitVersionInformation(branch = gitExtractor.currentBranch, isSnapshot = gitExtractor.localChanges > 0,
-                    localChangesCount = gitExtractor.localChanges)
-            val name = formatter.invoke(info)
-            println("\tformatter: $formatter => $name")
-
-            println("\tversionName: ${versionName()}")
-            println("\tversionCode: ${versionCode()}\n")
-            with(gitExtractor) {
-                println("\tbranch $currentBranch")
-                println("\tsha1 $currentSha1")
-                println("\tinitial commit date ${Date(initialCommitDate * 1000)}")
-                println("\tHEAD commit date ${Date(headCommitDate * 1000)}")
-                println("\tlocal changes $localChanges")
-
-                val allCommits = commitsUpTo("HEAD")
-                val defaultBranchCommits = commitsUpTo(defaultBranch)
-
-                val split = allCommits.groupBy { defaultBranchCommits.contains(it) }
-
-                val commitsOnFeatureBranch = split[false] ?: emptyList()
-                val commitsOnDefaultBranch = split[true] ?: emptyList()
-
-                println("\tall commit count ${allCommits.count()}")
-                println("\tcommits on feature branch ${commitsOnFeatureBranch.count()}")
-
-                println("\tlatest default branch commit: ${commitsOnDefaultBranch.first()}")
-            }
+    var formatter: ((GitVersioner) -> CharSequence) = { versioner ->
+        var name = "${versioner.versionCode()}"
+        if (baseBranch != branchName) {
+            // TODO make branch name interceptable
+            name += "-${versioner.branchName}"
         }
 
-        println("\ntook: ${took}ms")
+        val featureCount = versioner.featureBranchCommits.count()
+        if (featureCount > 0) {
+            name += "-$featureCount"
+        }
+        if (versioner.localChanges != NO_CHANGES) {
+            name += "(${versioner.localChanges})"
+        }
+        name
     }
 
+    /**
+     * base branch commit count + [timeComponent]
+     */
     fun versionCode(): Int {
-        if (gitExtractor.isGitProjectReady) {
-            return 20
+        if (!gitInfoExtractor.isGitProjectReady) {
+            return -1 // this is actually a valid android versionCode
         }
-        return 1000
+        return baseBranchCommits.count() + timeComponent
     }
 
+    /**
+     * string representation powered by [formatter]
+     */
     fun versionName(): String {
-        if (gitExtractor.isGitProjectReady) {
-            return "git ready"
+        if (!gitInfoExtractor.isGitProjectReady) {
+            return "undefined"
         }
-        return "name-1000"
+
+        return formatter.invoke(this).toString()
     }
 
+    val localChanges: LocalChanges by lazy {
+        if (!gitInfoExtractor.isGitProjectReady) NO_CHANGES else gitInfoExtractor.localChanges
+    }
+
+    val branchName: String?
+            = if (!gitInfoExtractor.isGitProjectReady) null else gitInfoExtractor.currentBranch
+
+    val baseBranchCommits: List<String> by lazy { gitInfoExtractor.commitsUpTo(baseBranch) }
+
+    val featureBranchCommits: List<String> by lazy {
+        gitInfoExtractor.commitsToHead.filter { !baseBranchCommits.contains(it) }
+    }
+
+    val currentSha1: String? = gitInfoExtractor.currentSha1
+
+    //TODO test
+    val currentSha1Short: String? = gitInfoExtractor.currentSha1
+
+    /**
+     * [yearFactor] based time component from initial commit to [featureBranchOriginCommit]
+     */
+    val timeComponent: Int by lazy {
+        if (!gitInfoExtractor.isGitProjectReady) return@lazy 0
+        val latestBaseCommit = featureBranchOriginCommit ?: return@lazy 0
+
+        val timeToHead = gitInfoExtractor.commitDate(
+                latestBaseCommit) - gitInfoExtractor.initialCommitDate
+        return@lazy (timeToHead * yearFactor / YEAR_IN_SECONDS + 0.5).toInt()
+    }
+
+    /**
+     * last commit in base branch which is parent of HEAD, most likely where the
+     * feature branch was created or the last base branch commit which was merged
+     * into the feature branch
+     */
+    val featureBranchOriginCommit by lazy {
+        val commit = baseBranchCommits.firstOrNull()
+        if(commit != null) return@lazy commit
+
+
+
+
+        null
+    }
 }
 
-public data class GitVersionInformation(
-        val branch: String,
-        val isSnapshot: Boolean,
-        val localChangesCount: Int
-)
-
-public interface VersionFormatter {
-    fun format(info: GitVersionInformation): String
+data class LocalChanges(
+        val filesChanged: Int = 0,
+        val additions: Int = 0,
+        val deletions: Int = 0
+) {
+    override fun toString(): String {
+        return if (filesChanged == 0) "no changes" else "+$additions -$deletions"
+    }
 }

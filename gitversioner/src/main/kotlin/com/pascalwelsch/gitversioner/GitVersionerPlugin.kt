@@ -12,15 +12,32 @@ public class GitVersionerPlugin : Plugin<Project> {
         if (project != rootProject) {
             throw IllegalStateException(
                     "Register the 'com.pascalwelsch.gitversioner' plugin only once " +
-                            "in the root project bulid.gradle.")
+                            "in the root project build.gradle.")
         }
 
 
         // add extension to root project, makes sense only once per project
-        val versioner = rootProject.extensions.create("gitVersioner", GitVersioner::class.java)
-        versioner.rootProject = rootProject
+        val gitVersionExtractor = ShellGitInfoExtractor(rootProject)
+        val gitVersioner = rootProject.extensions.create("gitVersioner",
+                GitVersioner::class.java, gitVersionExtractor)
 
-        //println("config: ")
-        //versioner.printYourself()
+        val helpTask = project.task("gitVersion").apply {
+            group = "Help"
+            description = "displays the version information extracted from git history"
+            doLast {
+                with(gitVersioner) {
+                    println(
+                        """
+                        |
+                        |GitVersioner Plugin
+                        |-------------------
+                        |VersionCode: ${versionCode()}
+                        |VersionName: ${versionName()}
+                        """.replaceIndentByMargin())
+                }
+            }
+        }
+
+        helpTask.group = "Help"
     }
 }
