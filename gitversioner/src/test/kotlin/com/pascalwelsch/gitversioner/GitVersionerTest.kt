@@ -306,6 +306,30 @@ class GitVersionerTest {
     }
 
     @Test
+    fun `one commit`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = null, date = 150_006_000) // <-- master, HEAD
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("X" to "master"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(1)
+            softly.assertThat(versioner.versionName()).isEqualTo("1")
+            softly.assertThat(versioner.baseBranchCommits).hasSize(1)
+            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
+        }
+    }
+
+    @Test
     fun `no commits`() {
         val git = MockGitRepo() // git initialized but nothing commited
         val versioner = GitVersioner(git)

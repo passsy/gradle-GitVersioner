@@ -11,7 +11,7 @@ public class GitVersioner internal constructor(private val gitInfoExtractor: Git
 
     var formatter: ((GitVersioner) -> CharSequence) = { versioner ->
         var name = "${versioner.versionCode()}"
-        if (baseBranch != branchName) {
+        if (branchName != null && baseBranch != branchName) {
             // TODO make branch name interceptable
             name += "-${versioner.branchName}"
         }
