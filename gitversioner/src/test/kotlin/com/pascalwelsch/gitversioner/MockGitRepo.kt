@@ -36,8 +36,8 @@ class MockGitRepo(
 
     override val currentSha1: String? = headCommit?.sha1
 
-    override val currentBranch: String? = if (headCommit == null) null else sha1ToBranch(
-            headCommit.sha1)
+    override val currentBranch: String? = if (headCommit == null) null else
+        sha1ToBranch(headCommit.sha1)
 
     override val initialCommitDate: Long
         get() {

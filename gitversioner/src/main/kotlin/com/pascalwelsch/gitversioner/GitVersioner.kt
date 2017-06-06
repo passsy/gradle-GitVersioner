@@ -18,7 +18,7 @@ public class GitVersioner internal constructor(private val gitInfoExtractor: Git
 
         val featureCount = versioner.featureBranchCommits.count()
         if (featureCount > 0) {
-            name += "-$featureCount"
+            name += "+$featureCount"
         }
         if (versioner.localChanges != NO_CHANGES) {
             name += "(${versioner.localChanges})"
