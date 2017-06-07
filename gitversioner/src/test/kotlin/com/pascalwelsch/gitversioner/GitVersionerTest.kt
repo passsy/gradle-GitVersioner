@@ -5,6 +5,7 @@ import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.JUnit4
+import java.util.concurrent.TimeUnit
 
 
 @RunWith(JUnit4::class)
@@ -363,6 +364,131 @@ class GitVersionerTest {
     }
 
     @Test
+    fun `timeComponent increased by 1 after ~8h`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "a", date = 150_000_000), // <-- HEAD, master
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("X" to "master"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(2)
+            softly.assertThat(versioner.versionName()).isEqualTo("2")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(2)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
+        }
+
+        // now the same with larger difference between commits (9h) should increase by 1 with default yearFactor
+        val graph2 = listOf(
+                Commit(sha1 = "X", parent = "a",
+                        date = 150_000_000 + TimeUnit.HOURS.toSeconds(9)), // <-- HEAD, master
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git2 = MockGitRepo(graph2, "X", listOf("X" to "master"))
+        val versioner2 = GitVersioner(git2)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner2.versionCode()).isEqualTo(3)
+            softly.assertThat(versioner2.versionName()).isEqualTo("3")
+            softly.assertThat(versioner2.baseBranchCommitCount).isEqualTo(2)
+            softly.assertThat(versioner2.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner2.branchName).isEqualTo("master")
+            softly.assertThat(versioner2.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner2.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner2.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner2.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner2.timeComponent).isEqualTo(1)
+            softly.assertThat(versioner2.featureBranchOriginCommit).isEqualTo("X")
+        }
+    }
+
+    @Test
+    fun `test yearfactor`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "a", date = 150_000_000), // <-- HEAD, master
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("X" to "master"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(2)
+            softly.assertThat(versioner.versionName()).isEqualTo("2")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(2)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
+        }
+
+        // add one year / yearFactor 1000
+        val graph2 = listOf(
+                Commit(sha1 = "X", parent = "a",
+                        date = 150_000_000 + TimeUnit.DAYS.toSeconds(365)), // <-- HEAD, master
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git2 = MockGitRepo(graph2, "X", listOf("X" to "master"))
+        val versioner2 = GitVersioner(git2)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner2.versionCode()).isEqualTo(1002)
+            softly.assertThat(versioner2.versionName()).isEqualTo("1002")
+            softly.assertThat(versioner2.baseBranchCommitCount).isEqualTo(2)
+            softly.assertThat(versioner2.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner2.branchName).isEqualTo("master")
+            softly.assertThat(versioner2.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner2.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner2.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner2.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner2.timeComponent).isEqualTo(1000)
+            softly.assertThat(versioner2.featureBranchOriginCommit).isEqualTo("X")
+        }
+    }
+
+    @Test
+    fun `custom year factor 1200`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "a",
+                        date = 150_000_000 + TimeUnit.DAYS.toSeconds(365)), // <-- HEAD, master
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("X" to "master"))
+        val versioner = GitVersioner(git)
+        versioner.yearFactor = 1200
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(1202)
+            softly.assertThat(versioner.versionName()).isEqualTo("1202")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(2)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1200)
+            softly.assertThat(versioner.timeComponent).isEqualTo(1200)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
+        }
+    }
+
+    @Test
     fun `no commits`() {
         val git = MockGitRepo() // git initialized but nothing commited
         val versioner = GitVersioner(git)
@@ -456,7 +582,7 @@ class GitVersionerTest {
     }
 
     @Test
-    fun extendVersioner() {
+    fun verifyOpenVersioner() {
         // required because gradle generates a proxy for the versioner
         val extended = object : GitVersioner(MockGitRepo()) {}
         assertThat(extended).isNotNull()

@@ -1,6 +1,8 @@
 package com.pascalwelsch.gitversioner
 
-private const val YEAR_IN_SECONDS = 60 * 60 * 24 * 365
+import java.util.concurrent.TimeUnit
+
+private val YEAR_IN_SECONDS = TimeUnit.DAYS.toSeconds(365)
 internal val NO_CHANGES = LocalChanges(0, 0, 0)
 
 open class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
@@ -26,7 +28,6 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
         name
     }
 
-    //TODO more tests
     /**
      * base branch commit count + [timeComponent]
      */
@@ -67,7 +68,6 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
     //TODO test
     val currentSha1Short: String? = gitInfoExtractor.currentSha1
 
-    //TODO test
     /**
      * [yearFactor] based time component from initial commit to [featureBranchOriginCommit]
      */
