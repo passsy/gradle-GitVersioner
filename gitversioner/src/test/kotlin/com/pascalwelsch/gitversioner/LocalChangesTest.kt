@@ -40,9 +40,9 @@ class LocalChangesTest {
 
     @Test
     fun `toString conversion`() {
-        assertThat(LocalChanges(1, 0, 14).toString()).isEqualTo("+0 -14")
-        assertThat(LocalChanges(0, 0, 0).toString()).isEqualTo("+0 -0")
-        assertThat(LocalChanges(1, 3, 4).toString()).isEqualTo("+3 -4")
-        assertThat(LocalChanges(1, 2, 0).toString()).isEqualTo("+2 -0")
+        assertThat(LocalChanges(1, 0, 14).toString()).isEqualTo("1 +0 -14")
+        assertThat(LocalChanges(0, 0, 0).toString()).isEqualTo("0 +0 -0")
+        assertThat(LocalChanges(2, 3, 4).toString()).isEqualTo("2 +3 -4")
+        assertThat(LocalChanges(1, 2, 0).toString()).isEqualTo("1 +2 -0")
     }
 }

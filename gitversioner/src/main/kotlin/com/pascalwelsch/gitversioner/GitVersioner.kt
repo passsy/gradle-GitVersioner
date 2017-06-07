@@ -11,6 +11,8 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
 
     var yearFactor: Int = 1000
 
+    var attachDiffToSnapshot: Boolean = true
+
     var formatter: ((GitVersioner) -> CharSequence) = { versioner ->
         var name = "${versioner.versionCode()}"
         if (branchName != null && baseBranch != branchName) {
@@ -23,7 +25,10 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
             name += "+$featureCount"
         }
         if (versioner.localChanges != NO_CHANGES) {
-            name += "(${versioner.localChanges})"
+            name += "-SNAPSHOT"
+            if (attachDiffToSnapshot) {
+                name += "(${versioner.localChanges})"
+            }
         }
         name
     }
@@ -60,7 +65,7 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
     val baseBranchCommitCount by lazy { baseBranchCommits.count() }
 
 
-    val featureBranchCommitCount by lazy { featureBranchCommits.count()}
+    val featureBranchCommitCount by lazy { featureBranchCommits.count() }
 
 
     val currentSha1: String? by lazy { gitInfoExtractor.currentSha1 }
@@ -84,7 +89,7 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
      * feature branch was created or the last base branch commit which was merged
      * into the feature branch
      */
-    val featureBranchOriginCommit: String? by lazy { baseBranchCommits?.firstOrNull() }
+    val featureBranchOriginCommit: String? by lazy { baseBranchCommits.firstOrNull() }
 
 
     // commits of base branch in history of current commit (HEAD)
@@ -100,8 +105,7 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
     }
 
     private val featureBranchCommits: List<String> by lazy {
-        val baseCommits = baseBranchCommits ?: gitInfoExtractor.commitsToHead
-        gitInfoExtractor.commitsToHead.filter { !baseCommits.contains(it) }
+        gitInfoExtractor.commitsToHead.filter { !baseBranchCommits.contains(it) }
     }
 }
 
@@ -111,6 +115,6 @@ data class LocalChanges(
         val deletions: Int = 0
 ) {
     override fun toString(): String {
-        return "+$additions -$deletions"
+        return "$filesChanged +$additions -$deletions"
     }
 }

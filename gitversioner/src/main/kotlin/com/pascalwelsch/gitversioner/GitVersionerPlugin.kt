@@ -18,7 +18,7 @@ public class GitVersionerPlugin : Plugin<Project> {
         val gitVersioner = rootProject.extensions.create("gitVersioner",
                 GitVersioner::class.java, gitVersionExtractor)
 
-        val helpTask = project.task("gitVersion").apply {
+        project.task("gitVersion").apply {
             group = "Help"
             description = "displays the version information extracted from git history"
             doLast {

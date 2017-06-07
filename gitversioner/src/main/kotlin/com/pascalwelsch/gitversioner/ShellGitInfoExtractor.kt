@@ -34,7 +34,6 @@ internal class ShellGitInfoExtractor(val project: Project) : GitInfoExtractor {
 
     override val localChanges: LocalChanges by lazy {
         if (!isGitProjectReady) return@lazy NO_CHANGES
-
         val shortStat = "git diff --shortstat".execute().text().trim()
         if (shortStat.isEmpty()) return@lazy NO_CHANGES
 
@@ -95,25 +94,6 @@ internal class ShellGitInfoExtractor(val project: Project) : GitInfoExtractor {
         return list
     }
 
-    internal fun commitsFrom(from: String, to: String): List<String> {
-        var result = "git rev-list $from..$to".execute()
-        if (result.exitValue() != 0) {
-            result = "git rev-list origin/$from..$to".execute()
-        }
-
-        if (result.exitValue() != 0) {
-            return emptyList()
-        }
-
-        val text = result.text().trim()
-        if (text.isEmpty()) {
-            return emptyList()
-        }
-
-        val list = text.lines().map { it.trim() }
-        return list
-    }
-
     private fun Process.text(): String = ProcessGroovyMethods.getText(this)
 
     private fun String.execute(): Process {
@@ -131,6 +111,8 @@ internal class ShellGitInfoExtractor(val project: Project) : GitInfoExtractor {
  */
 internal fun parseShortStats(shortstat: String): LocalChanges {
     val parts = shortstat.split(",")
+
+    println(parts)
 
     var filesChanges = 0
     var additions = 0
