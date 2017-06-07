@@ -3,44 +3,28 @@ package com.pascalwelsch.gitversioner
 import java.util.concurrent.TimeUnit
 
 private val YEAR_IN_SECONDS = TimeUnit.DAYS.toSeconds(365)
-internal val NO_CHANGES = LocalChanges(0, 0, 0)
 
-open class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
+public val NO_CHANGES = LocalChanges(0, 0, 0)
 
-    var baseBranch: String = "master"
+public open class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
 
-    var yearFactor: Int = 1000
+    public var baseBranch: String = "master"
 
-    var addSnapshot: Boolean = true
+    public var yearFactor: Int = 1000
 
-    var addLocalChangesDetails: Boolean = true
+    public var addSnapshot: Boolean = true
 
-    var formatter: ((GitVersioner) -> CharSequence) = { versioner ->
-        val sb = StringBuilder(versioner.versionCode().toString())
-        if (branchName != null && baseBranch != branchName) {
-            // TODO make branch name interceptable
-            sb.append("-").append(versioner.branchName)
-        }
+    public var addLocalChangesDetails: Boolean = true
 
-        val featureCount = versioner.featureBranchCommits.count()
-        if (featureCount > 0) {
-            sb.append("+").append(featureCount)
-        }
-        if (versioner.localChanges != NO_CHANGES) {
-            if (addSnapshot) {
-                sb.append("-SNAPSHOT")
-            }
-            if (addLocalChangesDetails) {
-                sb.append("(").append(versioner.localChanges).append(")")
-            }
-        }
-        sb.toString()
-    }
+    public var formatter: ((GitVersioner) -> CharSequence) = DEFAULT_FORMATTER
 
+    public var shortNameFormatter: ((GitVersioner) -> CharSequence) = DEFAULT_SHORT_NAME_FORMATTER
+
+    //TODO add offset
     /**
      * base branch commit count + [timeComponent]
      */
-    fun versionCode(): Int {
+    public fun versionCode(): Int {
         if (!gitInfoExtractor.isGitProjectReady) {
             return -1 // this is actually a valid android versionCode
         }
@@ -52,34 +36,57 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
     /**
      * string representation powered by [formatter]
      */
-    fun versionName(): String {
+    public fun versionName(): String {
         if (!gitInfoExtractor.isGitProjectReady) {
             return "undefined"
         }
-        return formatter.invoke(this).toString()
+        return formatter(this).toString()
     }
 
-    val localChanges: LocalChanges by lazy {
+    /**
+     * the current local changes (files changed, additions, deletions). [NO_CHANGES] when no changes detected
+     */
+    public val localChanges: LocalChanges by lazy {
         if (!gitInfoExtractor.isGitProjectReady) NO_CHANGES else gitInfoExtractor.localChanges
     }
 
-    val branchName: String?
+    /**
+     * the name of the branch HEAD is currently on
+     */
+    public val branchName: String?
             = if (!gitInfoExtractor.isGitProjectReady) null else gitInfoExtractor.currentBranch
 
-    val baseBranchCommitCount by lazy { baseBranchCommits.count() }
+    /**
+     * all commits in [baseBranch] without the [featureBranchCommits]
+     */
+    public val baseBranchCommitCount: Int by lazy { baseBranchCommits.count() }
 
+    /**
+     * commits on feature branch not in [baseBranch]
+     */
+    public val featureBranchCommitCount: Int by lazy { featureBranchCommits.count() }
 
-    val featureBranchCommitCount by lazy { featureBranchCommits.count() }
+    /**
+     * all commits together, from initial commit to HEAD
+     */
+    public val commitCount: Int by lazy { baseBranchCommitCount + featureBranchCommitCount }
 
+    /**
+     * full sha1 of current commit
+     *
+     * @see [currentSha1Short]
+     */
+    public val currentSha1: String? by lazy { gitInfoExtractor.currentSha1 }
 
-    val currentSha1: String? by lazy { gitInfoExtractor.currentSha1 }
-
-    val currentSha1Short: String? by lazy { gitInfoExtractor.currentSha1?.take(7) }
+    /**
+     * 7 char sha1 of current commit
+     */
+    public val currentSha1Short: String? by lazy { gitInfoExtractor.currentSha1?.take(7) }
 
     /**
      * [yearFactor] based time component from initial commit to [featureBranchOriginCommit]
      */
-    val timeComponent: Int by lazy {
+    public val timeComponent: Int by lazy {
         if (!gitInfoExtractor.isGitProjectReady) return@lazy 0
         val latestBaseCommit = featureBranchOriginCommit ?: return@lazy 0
 
@@ -93,10 +100,12 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
      * feature branch was created or the last base branch commit which was merged
      * into the feature branch
      */
-    val featureBranchOriginCommit: String? by lazy { baseBranchCommits.firstOrNull() }
+    public val featureBranchOriginCommit: String? by lazy { baseBranchCommits.firstOrNull() }
 
 
-    // commits of base branch in history of current commit (HEAD)
+    /**
+     * commits of base branch in history of current commit (HEAD).
+     */
     private val baseBranchCommits: List<String> by lazy {
         val baseCommits = gitInfoExtractor.commitsUpTo(baseBranch)
         baseCommits.forEach { baseCommit ->
@@ -108,12 +117,70 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
         return@lazy emptyList<String>()
     }
 
+    /**
+     * commits on the feature branch not merged into [baseBranch]
+     */
     private val featureBranchCommits: List<String> by lazy {
         gitInfoExtractor.commitsToHead.filter { !baseBranchCommits.contains(it) }
     }
+
+
+    companion object {
+
+        @JvmStatic
+        public val DEFAULT_FORMATTER: ((GitVersioner) -> CharSequence) = { versioner ->
+            with(versioner) {
+                val sb = StringBuilder(versioner.versionCode().toString())
+                val hasCommits = featureBranchCommitCount > 0 || baseBranchCommitCount > 0
+                if (baseBranch != branchName && hasCommits) {
+                    // add branch identifier for
+                    sb.append("-").append(shortNameFormatter(versioner))
+                }
+
+                val featureCount = featureBranchCommits.count()
+                if (featureCount > 0) {
+                    sb.append("+").append(featureCount)
+                }
+                if (localChanges != NO_CHANGES) {
+                    if (addSnapshot) {
+                        sb.append("-SNAPSHOT")
+                    }
+                    if (addLocalChangesDetails) {
+                        sb.append("(").append(localChanges).append(")")
+                    }
+                }
+                sb.toString()
+            }
+        }
+
+        @JvmStatic
+        public val DEFAULT_SHORT_NAME_FORMATTER: ((GitVersioner) -> CharSequence) = { versioner ->
+            var name: String? = null
+            if (name == null) {
+                // use branch name from git
+                if (versioner.branchName != null && !versioner.branchName.isEmpty()) {
+                    name = versioner.branchName
+                }
+            }
+            if (name == null) {
+                // get branch name on jenkins
+                name = System.getenv("BRANCH") ?: System.getenv("BRANCH_NAME")
+            }
+            if (name == null) {
+                // nothing found fallback to sha1
+                name = versioner.currentSha1Short
+            }
+            if (name == null) {
+                // fallback, i.e. when git not initialized
+                name = "undefined"
+            }
+
+            name.replace("feature/", "").replace("addon/", "")
+        }
+    }
 }
 
-data class LocalChanges(
+public data class LocalChanges(
         val filesChanged: Int = 0,
         val additions: Int = 0,
         val deletions: Int = 0
