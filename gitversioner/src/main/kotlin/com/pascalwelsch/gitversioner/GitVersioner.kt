@@ -26,6 +26,7 @@ public class GitVersioner internal constructor(private val gitInfoExtractor: Git
         name
     }
 
+    //TODO more tests
     /**
      * base branch commit count + [timeComponent]
      */
@@ -33,7 +34,9 @@ public class GitVersioner internal constructor(private val gitInfoExtractor: Git
         if (!gitInfoExtractor.isGitProjectReady) {
             return -1 // this is actually a valid android versionCode
         }
-        return baseBranchCommits.count() + timeComponent
+
+        val commitComponent = baseBranchCommits.size
+        return commitComponent + timeComponent
     }
 
     /**
@@ -53,17 +56,18 @@ public class GitVersioner internal constructor(private val gitInfoExtractor: Git
     val branchName: String?
             = if (!gitInfoExtractor.isGitProjectReady) null else gitInfoExtractor.currentBranch
 
-    val baseBranchCommits: List<String> by lazy { gitInfoExtractor.commitsUpTo(baseBranch) }
+    val baseBranchCommitCount by lazy { baseBranchCommits.count() }
 
-    val featureBranchCommits: List<String> by lazy {
-        gitInfoExtractor.commitsToHead.filter { !baseBranchCommits.contains(it) }
-    }
+
+    val featureBranchCommitCount by lazy { featureBranchCommits.count()}
+
 
     val currentSha1: String? = gitInfoExtractor.currentSha1
 
     //TODO test
     val currentSha1Short: String? = gitInfoExtractor.currentSha1
 
+    //TODO test
     /**
      * [yearFactor] based time component from initial commit to [featureBranchOriginCommit]
      */
@@ -81,7 +85,25 @@ public class GitVersioner internal constructor(private val gitInfoExtractor: Git
      * feature branch was created or the last base branch commit which was merged
      * into the feature branch
      */
-    val featureBranchOriginCommit: String? by lazy { baseBranchCommits.firstOrNull() }
+    val featureBranchOriginCommit: String? by lazy { baseBranchCommits?.firstOrNull() }
+
+
+    // commits of base branch in history of current commit (HEAD)
+    private val baseBranchCommits: List<String> by lazy {
+        val baseCommits = gitInfoExtractor.commitsUpTo(baseBranch)
+        baseCommits.forEach { baseCommit ->
+            if (gitInfoExtractor.commitsToHead.contains(baseCommit)) {
+                return@lazy baseCommits
+            }
+        }
+
+        return@lazy emptyList<String>()
+    }
+
+    private val featureBranchCommits: List<String> by lazy {
+        val baseCommits = baseBranchCommits ?: gitInfoExtractor.commitsToHead
+        gitInfoExtractor.commitsToHead.filter { !baseCommits.contains(it) }
+    }
 }
 
 data class LocalChanges(
@@ -90,6 +112,6 @@ data class LocalChanges(
         val deletions: Int = 0
 ) {
     override fun toString(): String {
-        return if (filesChanged == 0) "no changes" else "+$additions -$deletions"
+        return "+$additions -$deletions"
     }
 }

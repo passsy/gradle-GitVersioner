@@ -1,6 +1,5 @@
 package com.pascalwelsch.gitversioner
 
-import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,8 +31,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(11)
             softly.assertThat(versioner.versionName()).isEqualTo("11")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(11)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(11)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isEqualTo("master")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -68,8 +67,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(0)
             softly.assertThat(versioner.versionName()).isEqualTo("0-master+11")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(0)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(11)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(11)
             softly.assertThat(versioner.branchName).isEqualTo("master")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("develop")
@@ -82,11 +81,11 @@ class GitVersionerTest {
         }
     }
 
-    //TODO orphan case not correctly handled
     @Test
     fun `on orphan initial commit`() {
         val graph = listOf(
                 Commit(sha1 = "X", parent = null, date = 150_010_000), // <-- HEAD, orphan
+
                 Commit(sha1 = "e", parent = "d", date = 150_004_000), // <-- master
                 Commit(sha1 = "d", parent = "c", date = 150_003_000),
                 Commit(sha1 = "c", parent = "b", date = 150_002_000),
@@ -94,15 +93,47 @@ class GitVersionerTest {
                 Commit(sha1 = "a", parent = null, date = 150_000_000)
         )
 
-        val git = MockGitRepo(graph, "X", listOf("e" to "master"))
+        val git = MockGitRepo(graph, "X", listOf("e" to "master", "X" to "orphan"))
         val versioner = GitVersioner(git)
 
         assertSoftly { softly ->
-            softly.assertThat(versioner.versionCode()).isEqualTo(-1)
-            softly.assertThat(versioner.versionName()).isEqualTo("orphan+1")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(0)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(1)
-            softly.assertThat(versioner.branchName).isNull()
+            softly.assertThat(versioner.versionCode()).isEqualTo(0)
+            softly.assertThat(versioner.versionName()).isEqualTo("0-orphan+1")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(1)
+            softly.assertThat(versioner.branchName).isEqualTo("orphan")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isNull()
+        }
+    }
+
+    @Test
+    fun `on orphan few commits`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "b'", date = 150_030_000), // <-- HEAD, feature/x
+                Commit(sha1 = "b'", parent = "a'", date = 150_020_000),
+                Commit(sha1 = "a'", parent = null, date = 150_010_000), // <-- orphan
+
+                Commit(sha1 = "e", parent = "d", date = 150_004_000), // <-- master
+                Commit(sha1 = "d", parent = "c", date = 150_003_000),
+                Commit(sha1 = "c", parent = "b", date = 150_002_000),
+                Commit(sha1 = "b", parent = "a", date = 150_001_000),
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("e" to "master", "X" to "feature/x"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(0)
+            softly.assertThat(versioner.versionName()).isEqualTo("0-feature/x+3")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(3)
+            softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
             softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
@@ -137,8 +168,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
             softly.assertThat(versioner.versionName()).isEqualTo("7-feature/x+4(+5 -7)")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(7)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(4)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(7)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(4)
             softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -171,8 +202,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
             softly.assertThat(versioner.versionName()).isEqualTo("7-feature/x+4")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(7)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(4)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(7)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(4)
             softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -201,8 +232,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
             softly.assertThat(versioner.versionName()).isEqualTo("7-feature/x")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(7)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(7)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -232,8 +263,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
             softly.assertThat(versioner.versionName()).isEqualTo("7-feature/x(+2 -0)")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(7)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(7)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -243,6 +274,7 @@ class GitVersionerTest {
             softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
         }
     }
+
     @Test
     fun `on feature branch - no commits - local changes (deletions only)`() {
         val graph = listOf(
@@ -262,8 +294,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
             softly.assertThat(versioner.versionName()).isEqualTo("7-feature/x(+0 -2)")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(7)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(7)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -293,8 +325,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
             softly.assertThat(versioner.versionName()).isEqualTo("7-feature/x+1")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(7)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(1)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(7)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(1)
             softly.assertThat(versioner.branchName).isEqualTo("feature/x")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -317,8 +349,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(1)
             softly.assertThat(versioner.versionName()).isEqualTo("1")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(1)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(1)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isEqualTo("master")
             softly.assertThat(versioner.currentSha1).isEqualTo("X")
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -337,8 +369,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(0)
             softly.assertThat(versioner.versionName()).isEqualTo("0")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(0)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isNull()
             softly.assertThat(versioner.currentSha1).isNull()
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -357,8 +389,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(-1)
             softly.assertThat(versioner.versionName()).isEqualTo("undefined")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(0)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isNull()
             softly.assertThat(versioner.currentSha1).isNull()
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -379,8 +411,8 @@ class GitVersionerTest {
         assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(0)
             softly.assertThat(versioner.versionName()).isEqualTo("0(+5 -7)")
-            softly.assertThat(versioner.baseBranchCommits).hasSize(0)
-            softly.assertThat(versioner.featureBranchCommits).hasSize(0)
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
             softly.assertThat(versioner.branchName).isNull()
             softly.assertThat(versioner.currentSha1).isNull()
             softly.assertThat(versioner.baseBranch).isEqualTo("master")
@@ -388,6 +420,37 @@ class GitVersionerTest {
             softly.assertThat(versioner.yearFactor).isEqualTo(1000)
             softly.assertThat(versioner.timeComponent).isEqualTo(0)
             softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo(null)
+        }
+    }
+
+    @Test
+    fun `no feature branch name - like a jenkins PR build`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "g", date = 150_006_000), // <-- HEAD
+                Commit(sha1 = "g", parent = "f", date = 150_006_000),
+                Commit(sha1 = "f", parent = "e", date = 150_005_000),
+                Commit(sha1 = "e", parent = "d", date = 150_004_000), // <-- master
+                Commit(sha1 = "d", parent = "c", date = 150_003_000),
+                Commit(sha1 = "c", parent = "b", date = 150_002_000),
+                Commit(sha1 = "b", parent = "a", date = 150_001_000),
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("e" to "master"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(5)
+            softly.assertThat(versioner.versionName()).isEqualTo("5+3")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(5)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(3)
+            softly.assertThat(versioner.branchName).isNull()
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("e")
         }
     }
 
