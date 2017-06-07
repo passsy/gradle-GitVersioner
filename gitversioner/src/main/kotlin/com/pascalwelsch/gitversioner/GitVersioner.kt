@@ -11,26 +11,30 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
 
     var yearFactor: Int = 1000
 
-    var attachDiffToSnapshot: Boolean = true
+    var addSnapshot: Boolean = true
+
+    var addLocalChangesDetails: Boolean = true
 
     var formatter: ((GitVersioner) -> CharSequence) = { versioner ->
-        var name = "${versioner.versionCode()}"
+        val sb = StringBuilder(versioner.versionCode().toString())
         if (branchName != null && baseBranch != branchName) {
             // TODO make branch name interceptable
-            name += "-${versioner.branchName}"
+            sb.append("-").append(versioner.branchName)
         }
 
         val featureCount = versioner.featureBranchCommits.count()
         if (featureCount > 0) {
-            name += "+$featureCount"
+            sb.append("+").append(featureCount)
         }
         if (versioner.localChanges != NO_CHANGES) {
-            name += "-SNAPSHOT"
-            if (attachDiffToSnapshot) {
-                name += "(${versioner.localChanges})"
+            if (addSnapshot) {
+                sb.append("-SNAPSHOT")
+            }
+            if (addLocalChangesDetails) {
+                sb.append("(").append(versioner.localChanges).append(")")
             }
         }
-        name
+        sb.toString()
     }
 
     /**

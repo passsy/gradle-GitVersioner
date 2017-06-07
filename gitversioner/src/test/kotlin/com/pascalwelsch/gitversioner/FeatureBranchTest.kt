@@ -64,7 +64,7 @@ class FeatureBranchTest {
         val git = MockGitRepo(graph, "X", listOf("g" to "master", "X" to "feature/x"), localChanges)
         val versioner = GitVersioner(git)
 
-        versioner.attachDiffToSnapshot = false
+        versioner.addLocalChangesDetails = false
 
         SoftAssertions.assertSoftly { softly ->
             softly.assertThat(versioner.versionCode()).isEqualTo(7)
