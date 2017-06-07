@@ -1,5 +1,6 @@
 package com.pascalwelsch.gitversioner
 
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.SoftAssertions.assertSoftly
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -454,4 +455,10 @@ class GitVersionerTest {
         }
     }
 
+    @Test
+    fun extendVersioner() {
+        // required because gradle generates a proxy for the versioner
+        val extended = object : GitVersioner(MockGitRepo()) {}
+        assertThat(extended).isNotNull()
+    }
 }

@@ -3,7 +3,7 @@ package com.pascalwelsch.gitversioner
 private const val YEAR_IN_SECONDS = 60 * 60 * 24 * 365
 internal val NO_CHANGES = LocalChanges(0, 0, 0)
 
-public class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
+open class GitVersioner internal constructor(private val gitInfoExtractor: GitInfoExtractor) {
 
     var baseBranch: String = "master"
 
