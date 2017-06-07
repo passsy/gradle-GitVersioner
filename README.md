@@ -17,7 +17,7 @@ This projects aims to bring the SVN simplicity and more back to git for your gra
 buildscript {
     dependencies {
         classpath files('<path/to/repo>/' +
-                    'gitversioner/build/libs/gitversioner-0.0.1-SNAPSHOT.jar')
+                    'gitversioner/build/libs/gitversioner-0.1.0-SNAPSHOT.jar')
     }
 }
 
