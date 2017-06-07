@@ -40,7 +40,12 @@ public open class GitVersioner internal constructor(private val gitInfoExtractor
         if (!gitInfoExtractor.isGitProjectReady) {
             return "undefined"
         }
-        return formatter(this).toString()
+        try {
+            return formatter(this).toString()
+        } catch (e: Throwable) {
+            println("formatter failed to generate a correct name, using default formatter")
+            return DEFAULT_FORMATTER(this).toString()
+        }
     }
 
     /**
@@ -134,7 +139,14 @@ public open class GitVersioner internal constructor(private val gitInfoExtractor
                 val hasCommits = featureBranchCommitCount > 0 || baseBranchCommitCount > 0
                 if (baseBranch != branchName && hasCommits) {
                     // add branch identifier for
-                    sb.append("-").append(shortNameFormatter(versioner))
+                    val shortName = try {
+                        shortNameFormatter(versioner)
+                    } catch (e: Throwable) {
+                        println("shortNameFormatter failed to generate a correct name, using default formatter")
+                        DEFAULT_SHORT_NAME_FORMATTER(versioner).toString()
+                    }
+
+                    sb.append("-").append(shortName)
                 }
 
                 val featureCount = featureBranchCommits.count()

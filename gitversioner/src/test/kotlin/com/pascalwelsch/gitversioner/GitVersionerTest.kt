@@ -516,7 +516,8 @@ class GitVersionerTest {
     @Test
     fun `custom name formatter`() {
         val graph = listOf(
-                Commit(sha1 = "X", parent = "j", date = 150_010_000), // <-- fix_ABC-12345_nothing_special, HEAD
+                Commit(sha1 = "X", parent = "j",
+                        date = 150_010_000), // <-- fix_ABC-12345_nothing_special, HEAD
                 Commit(sha1 = "j", parent = "i", date = 150_009_000),
                 Commit(sha1 = "i", parent = "h", date = 150_008_000), // <-- master
                 Commit(sha1 = "h", parent = "g", date = 150_007_000),
@@ -556,7 +557,8 @@ class GitVersionerTest {
     @Test
     fun `custom formatter`() {
         val graph = listOf(
-                Commit(sha1 = "X", parent = "j", date = 150_010_000), // <-- fix_ABC-12345_nothing_special, HEAD
+                Commit(sha1 = "X", parent = "j",
+                        date = 150_010_000), // <-- fix_ABC-12345_nothing_special, HEAD
                 Commit(sha1 = "j", parent = "i", date = 150_009_000),
                 Commit(sha1 = "i", parent = "h", date = 150_008_000), // <-- master
                 Commit(sha1 = "h", parent = "g", date = 150_007_000),
@@ -588,6 +590,112 @@ class GitVersionerTest {
             softly.assertThat(versioner.yearFactor).isEqualTo(1000)
             softly.assertThat(versioner.timeComponent).isEqualTo(0)
             softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("i")
+        }
+    }
+
+    @Test
+    fun `no branch name - sha1 fallback`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "j", date = 150_010_000), // <-- HEAD
+                Commit(sha1 = "j", parent = "i", date = 150_009_000),
+                Commit(sha1 = "i", parent = "h", date = 150_008_000), // <-- master
+                Commit(sha1 = "h", parent = "g", date = 150_007_000),
+                Commit(sha1 = "g", parent = "f", date = 150_006_000),
+                Commit(sha1 = "f", parent = "e", date = 150_005_000),
+                Commit(sha1 = "e", parent = "d", date = 150_004_000),
+                Commit(sha1 = "d", parent = "c", date = 150_003_000),
+                Commit(sha1 = "c", parent = "b", date = 150_002_000),
+                Commit(sha1 = "b", parent = "a", date = 150_001_000),
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("i" to "master"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(9)
+            softly.assertThat(versioner.versionName()).isEqualTo("9-X+2")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(9)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(2)
+            softly.assertThat(versioner.branchName).isNull()
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("i")
+        }
+    }
+
+    @Test
+    fun `custom name formatter - fails`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "j", date = 150_010_000), // <-- master, HEAD
+                Commit(sha1 = "j", parent = "i", date = 150_009_000),
+                Commit(sha1 = "i", parent = "h", date = 150_008_000),
+                Commit(sha1 = "h", parent = "g", date = 150_007_000),
+                Commit(sha1 = "g", parent = "f", date = 150_006_000),
+                Commit(sha1 = "f", parent = "e", date = 150_005_000),
+                Commit(sha1 = "e", parent = "d", date = 150_004_000),
+                Commit(sha1 = "d", parent = "c", date = 150_003_000),
+                Commit(sha1 = "c", parent = "b", date = 150_002_000),
+                Commit(sha1 = "b", parent = "a", date = 150_001_000),
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("X" to "master"))
+        val versioner = GitVersioner(git)
+        // fail will be ignored, fallback default formatter
+        versioner.shortNameFormatter = { throw Exception("fail!") }
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(11)
+            softly.assertThat(versioner.versionName()).isEqualTo("11")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(11)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
+        }
+    }
+
+    @Test
+    fun `custom formatter - fails`() {
+        val graph = listOf(
+                Commit(sha1 = "X", parent = "j", date = 150_010_000), // <-- master, HEAD
+                Commit(sha1 = "j", parent = "i", date = 150_009_000),
+                Commit(sha1 = "i", parent = "h", date = 150_008_000),
+                Commit(sha1 = "h", parent = "g", date = 150_007_000),
+                Commit(sha1 = "g", parent = "f", date = 150_006_000),
+                Commit(sha1 = "f", parent = "e", date = 150_005_000),
+                Commit(sha1 = "e", parent = "d", date = 150_004_000),
+                Commit(sha1 = "d", parent = "c", date = 150_003_000),
+                Commit(sha1 = "c", parent = "b", date = 150_002_000),
+                Commit(sha1 = "b", parent = "a", date = 150_001_000),
+                Commit(sha1 = "a", parent = null, date = 150_000_000)
+        )
+
+        val git = MockGitRepo(graph, "X", listOf("X" to "master"))
+        val versioner = GitVersioner(git)
+        // fail will be ignored, fallback default formatter
+        versioner.formatter = { throw Exception("fail!") }
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(11)
+            softly.assertThat(versioner.versionName()).isEqualTo("11")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(11)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("X")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("X")
         }
     }
 }
