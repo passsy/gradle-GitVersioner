@@ -63,10 +63,9 @@ open class GitVersioner internal constructor(private val gitInfoExtractor: GitIn
     val featureBranchCommitCount by lazy { featureBranchCommits.count()}
 
 
-    val currentSha1: String? = gitInfoExtractor.currentSha1
+    val currentSha1: String? by lazy { gitInfoExtractor.currentSha1 }
 
-    //TODO test
-    val currentSha1Short: String? = gitInfoExtractor.currentSha1
+    val currentSha1Short: String? by lazy { gitInfoExtractor.currentSha1?.take(7) }
 
     /**
      * [yearFactor] based time component from initial commit to [featureBranchOriginCommit]

@@ -364,6 +364,45 @@ class GitVersionerTest {
     }
 
     @Test
+    fun `short sha1`() {
+        val graph = listOf(
+                Commit(sha1 = "abcdefghijkl", parent = null, date = 150_006_000) // <-- master, HEAD
+        )
+
+        val git = MockGitRepo(graph, "abcdefghijkl", listOf("abcdefghijkl" to "master"))
+        val versioner = GitVersioner(git)
+
+        assertSoftly { softly ->
+            softly.assertThat(versioner.versionCode()).isEqualTo(1)
+            softly.assertThat(versioner.versionName()).isEqualTo("1")
+            softly.assertThat(versioner.baseBranchCommitCount).isEqualTo(1)
+            softly.assertThat(versioner.featureBranchCommitCount).isEqualTo(0)
+            softly.assertThat(versioner.branchName).isEqualTo("master")
+            softly.assertThat(versioner.currentSha1).isEqualTo("abcdefghijkl")
+            softly.assertThat(versioner.baseBranch).isEqualTo("master")
+            softly.assertThat(versioner.localChanges).isEqualTo(NO_CHANGES)
+            softly.assertThat(versioner.yearFactor).isEqualTo(1000)
+            softly.assertThat(versioner.timeComponent).isEqualTo(0)
+            softly.assertThat(versioner.featureBranchOriginCommit).isEqualTo("abcdefghijkl")
+        }
+
+        assertThat(versioner.currentSha1Short).isEqualTo("abcdefg").hasSize(7)
+    }
+
+    @Test
+    fun `short sha1 - edge cases`() {
+
+        assertThat(GitVersioner(GitInfoExtractorStub(currentSha1 = null)).currentSha1Short)
+                .isNull()
+
+        assertThat(GitVersioner(GitInfoExtractorStub(currentSha1 = "abc")).currentSha1Short)
+                .isEqualTo("abc")
+
+        assertThat(GitVersioner(GitInfoExtractorStub(currentSha1 = "abcdefghi")).currentSha1Short)
+                .hasSize(7).isEqualTo("abcdefg")
+    }
+
+    @Test
     fun `timeComponent increased by 1 after ~8h`() {
         val graph = listOf(
                 Commit(sha1 = "X", parent = "a", date = 150_000_000), // <-- HEAD, master

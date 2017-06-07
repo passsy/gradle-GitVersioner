@@ -87,3 +87,26 @@ class MockGitRepo(
         return graph.find { it.sha1 == parent }
     }
 }
+
+class GitInfoExtractorStub(
+        override val currentSha1: String? = null,
+        override val currentBranch: String? = null,
+        override val localChanges: LocalChanges = NO_CHANGES,
+        override val isGitProjectReady: Boolean = true
+) : GitInfoExtractor {
+
+    override val initialCommitDate: Long
+        get() = TODO("not implemented")
+
+    override val commitsToHead: List<String>
+        get() = TODO("not implemented")
+
+    override fun commitDate(rev: String): Long {
+        TODO("not implemented")
+    }
+
+    override fun commitsUpTo(rev: String): List<String> {
+        TODO("not implemented")
+    }
+
+}
