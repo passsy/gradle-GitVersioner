@@ -153,7 +153,10 @@ def GitVersion generateVersionName() {
         if (localChangesCountEnabled && localChangesCount > 0) {
             result += "($localChangesCount)"
         }
-        if (snapshotEnabled && hasLocalChanges) {
+        if (defaultBranch == currentBranch) {
+            result += "-RELEASE"
+        }
+        else if (snapshotEnabled && hasLocalChanges) {
             result += "-SNAPSHOT"
         }
         return result
