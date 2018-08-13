@@ -13,6 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
+ /*
+  * DON'T USE THIS SCRIPT! It contains bugs and can't be updated (due to the fact hundreds of projects pull it directly from master).
+  * Please use 
+  * - the gradle plugin https://github.com/passsy/gradle-gitVersioner-plugin or
+  * - the git extension CLI tool https://github.com/passsy/git-revision
+  */
 
 ext {
     GitVersion version = this.generateVersionName()
