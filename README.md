@@ -1,5 +1,13 @@
 # Git Versioner for gradle
 
+## Deprecated
+**DON'T USE THIS SCRIPT!** It contains bugs and can't be updated (due to the fact hundreds of projects pull it directly from master).
+Please use 
+- the gradle plugin https://github.com/passsy/gradle-gitVersioner-plugin or
+- the git extension CLI tool https://github.com/passsy/git-revision
+
+## About
+
 Version numbers are hard. 
 It was easier with SVN where the revision number got increased for every commit. 
 Revision `342` was clearly older than revision `401`. 
