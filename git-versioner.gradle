@@ -54,7 +54,9 @@ public class GitVersion {
 def GitVersion generateVersionName() {
 
     // check if git project
+    logger.info('checking git status')
     def status = 'git status'.execute([], rootDir)
+    logger.info('status: ' + status)
     status.in.eachLine { line -> logger.info(line) }
     status.err.eachLine { line -> logger.info('Error: ' + line) }
     status.waitFor()
@@ -75,33 +77,38 @@ def GitVersion generateVersionName() {
     }
 
     // read ext properties
+    logger.info('reading configuration')
     Map configuration = getPropertyOrDefault(rootProject, "gitVersioner", [:]) as Map
     def String[] stableBranches = configuration.get("stableBranches") ?: []
     def defaultBranch = configuration.get("defaultBranch") ?: "master"
     float yearFactor = (configuration.get("yearFactor") ?: "1000").toString().toFloat()
-	long initialOffset = (configuration.get("initialOffset") ?: "0").toString().toLong()
+    long initialOffset = (configuration.get("initialOffset") ?: "0").toString().toLong()
     boolean snapshotEnabled = configuration.get("snapshotEnabled") != false
     boolean localChangesCountEnabled = configuration.get("localChangesCountEnabled") != false
     def shortNameClosure = configuration.get("shortName")
 
     // get information from git
+    logger.info('getting current branch name')
     def currentBranch = 'git symbolic-ref --short -q HEAD'.execute([], rootDir).text.trim()
 
     // use a defined stable branch when on such a branch
     if (stableBranches.contains(currentBranch)) {
         defaultBranch = currentBranch
     }
+    logger.info('getting current commit')
     def currentCommit = 'git rev-parse HEAD'.execute([], rootDir).text.trim()
 
+    logger.info('getting git log')
     def log = "git log --pretty=format:'%at' --reverse".execute([], rootDir)
             .text.trim().readLines()
     long initialCommitDate = (log.size() > 0 ? log.first().trim().replaceAll('\'', '').toLong() : 0) - initialOffset
+    logger.info('getting local changes count')
     def localChangesCount = 'git diff-index HEAD'.execute([], rootDir).text.trim().readLines().
             size()
     boolean hasLocalChanges = localChangesCount > 0
 
 
-
+    logger.info('getting git rev-list of default branch')
     def diffToDefault = "git rev-list $defaultBranch..".execute([], rootDir)
     diffToDefault.in.eachLine { line -> logger.info(line) }
     diffToDefault.err.eachLine { line -> logger.info('Error: ' + line) }
@@ -112,6 +119,7 @@ def GitVersion generateVersionName() {
     def featurelines = diffToDefault.text.trim().readLines()
     def commitsInFeatureBranch = featurelines.size();
 
+    logger.info('getting git rev-list of current commit')
     def defaultAndFeatureLines = "git rev-list $currentCommit"
             .execute([], rootDir).text.trim().readLines()
 
@@ -127,12 +135,14 @@ def GitVersion generateVersionName() {
     }()
 
     // get additional information
+    logger.info('getting last commit date')
     def defaultBranchDatesLog = "git log $lastestDefaultBranchCommitSha1 --pretty=format:'%at' -n 1"
             .execute([], rootDir).text.trim().replaceAll('\'', '')
     long latestCommitDate = defaultBranchDatesLog.isLong() ? defaultBranchDatesLog.toLong() :
             initialCommitDate
 
     // commit count is the first part of the version
+    logger.info('getting number of commits')
     def defautBranchCommitCount = "git rev-list $lastestDefaultBranchCommitSha1 --count"
             .execute([], rootDir).text.trim()
     def commitCount = defautBranchCommitCount.isInteger() ? defautBranchCommitCount.toInteger() : 0
@@ -141,7 +151,7 @@ def GitVersion generateVersionName() {
     def long YEAR_IN_SECONDS = 60 * 60 * 24 * 365
     def diff = latestCommitDate - initialCommitDate
 
-
+    logger.info('calculating version info')
     long time = {
         if (yearFactor <= 0) {
             return 0;
@@ -164,6 +174,7 @@ def GitVersion generateVersionName() {
         return result
     }()
 
+    logger.info('calculated version code: ' + combinedVersion)
     def holder = new GitVersion()
     holder.version = combinedVersion
     holder.branchName = currentBranch
