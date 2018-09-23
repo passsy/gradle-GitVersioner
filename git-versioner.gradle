@@ -55,6 +55,8 @@ def GitVersion generateVersionName() {
 
     // check if git project
     def status = 'git status'.execute([], rootDir)
+    status.in.eachLine { line -> logger.info(line) }
+    status.err.eachLine { line -> logger.info('Error: ' + line) }
     status.waitFor()
     def isGitProject = status.exitValue()
 
@@ -101,6 +103,8 @@ def GitVersion generateVersionName() {
 
 
     def diffToDefault = "git rev-list $defaultBranch..".execute([], rootDir)
+    diffToDefault.in.eachLine { line -> logger.info(line) }
+    diffToDefault.err.eachLine { line -> logger.info('Error: ' + line) }
     diffToDefault.waitFor()
     if (diffToDefault.exitValue() != 0) {
         diffToDefault = "git rev-list origin/$defaultBranch..".execute([], rootDir)
