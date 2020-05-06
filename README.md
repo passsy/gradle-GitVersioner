@@ -77,6 +77,7 @@ ext.gitVersioner = [
         yearFactor              : 1200, 	  // default "1000", increasing every 8.57h
         snapshotEnabled         : false,      // default false, the "-SNAPSHOT" postfix
         localChangesCountEnabled: false,       // default false, the (<commitCount>) before -SNAPSHOT
+		initialOffset           : 2100000,    // default "0", amount of time (in seconds) to offset the initial commit by, if development started before commits began
         shortName: { gitVersion ->            // optional closure to build a short name
           // allows you to add your own short name logic
           // All properties from gitVersion are available
